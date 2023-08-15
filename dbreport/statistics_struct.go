@@ -29,7 +29,7 @@ type DBReport struct {
 	OtherQuery     *float64 `"/" @Float ")"`
 	LatencyPct     *uint64  `"lat" LetancyPictPrefix @Int LetancyPictSuffix`
 	Latency        *float64 `@Float`
-	Errors         *float64 `"err/s" @Float`
+	Errors         *float64 `"err/s:" @Float`
 	Reconnect      *float64 `"reconn/s:" @Float`
 }
 
