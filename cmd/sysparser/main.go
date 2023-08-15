@@ -29,6 +29,9 @@ type output struct {
 	PercentileLatency string  `csv:"Latency(Percentile)"`
 }
 
+var fileName = ""
+var detail = false
+
 func main() {
 	app := &cli.App{
 		Name:   "sysparser",
@@ -36,6 +39,9 @@ func main() {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name: "file",
+			},
+			&cli.BoolFlag{
+				Name: "detail",
 			},
 		},
 	}
@@ -48,13 +54,14 @@ func main() {
 
 func parseAndPrint(c *cli.Context) error {
 	fileName := c.String("file")
+	detail := c.Bool("detail")
 
 	readers, err := parse(fileName)
 	if err != nil {
 		return err
 	}
 
-	return print2(readers)
+	return print2(readers, detail)
 }
 
 func parse(fileName string) ([]io.Reader, error) {
@@ -112,9 +119,13 @@ func print(readers []io.Reader) error {
 	return nil
 }
 
-func print2(readers []io.Reader) error {
+func print2(readers []io.Reader, detail bool) error {
 	// 定义CSV header
-	header := []string{"Version", "Threads", "TPS", "QPS", "Read", "Write", "Other", "Total", "IgnoredErrors", "Recoonects", "MinLatency", "AvgLatency", "MaxLatency"}
+	header := []string{"Threads", "QPS", "AvgLatency", "PctLatency"}
+	if detail {
+		header = []string{"Version", "Threads", "TPS", "QPS", "Read", "Write", "Other", "Total",
+			"IgnoredErrors", "Recoonects", "MinLatency", "AvgLatency", "MaxLatency", "PctLatency"}
+	}
 
 	// 打印CSV header
 	fmt.Println(strings.Join(header, "\t"))
@@ -125,28 +136,36 @@ func print2(readers []io.Reader) error {
 			return err
 		}
 
+		pl := fmt.Sprintf("%.2f", *s.Latency.Percentile)
+
 		o := []*output{
 			{
-				Version:       s.Version.VersionNumber,
-				Threads:       s.NumThreads,
-				TPS:           *s.SQLStatistics.TransactionsInfo.TransactionsPerSecond,
-				QPS:           *s.SQLStatistics.Queries.QueriesPerSecond,
-				Read:          *s.SQLStatistics.ReadQueries,
-				Write:         *s.SQLStatistics.WriteQueries,
-				Other:         *s.SQLStatistics.OtherQueries,
-				Total:         *s.SQLStatistics.TotalQueries,
-				IgnoredErrors: *s.SQLStatistics.IgnoredErrors.IgnoredErrors,
-				Recoonects:    *s.SQLStatistics.Reconnects.Reconnects,
-				MinLatency:    *s.Latency.Minimum,
-				AvgLatency:    *s.Latency.Average,
-				MaxLatency:    *s.Latency.Maximum,
+				Version:           s.Version.VersionNumber,
+				Threads:           s.NumThreads,
+				TPS:               *s.SQLStatistics.TransactionsInfo.TransactionsPerSecond,
+				QPS:               *s.SQLStatistics.Queries.QueriesPerSecond,
+				Read:              *s.SQLStatistics.ReadQueries,
+				Write:             *s.SQLStatistics.WriteQueries,
+				Other:             *s.SQLStatistics.OtherQueries,
+				Total:             *s.SQLStatistics.TotalQueries,
+				IgnoredErrors:     *s.SQLStatistics.IgnoredErrors.IgnoredErrors,
+				Recoonects:        *s.SQLStatistics.Reconnects.Reconnects,
+				MinLatency:        *s.Latency.Minimum,
+				AvgLatency:        *s.Latency.Average,
+				MaxLatency:        *s.Latency.Maximum,
+				PercentileLatency: pl,
 			},
 		}
 
 		// 打印数据行
 		for _, output := range o {
-			fmt.Printf("%s\t%d\t%.2f\t%.2f\t%d\t%d\t%d\t%d\t%d\t%d\t%.2f\t%.2f\t%.2f\t\n",
-				output.Version, output.Threads, output.TPS, output.QPS, output.Read, output.Write, output.Other, output.Total, output.IgnoredErrors, output.Recoonects, output.MinLatency, output.AvgLatency, output.MaxLatency)
+			if detail {
+				fmt.Printf("%s\t%d\t%.2f\t%.2f\t%d\t%d\t%d\t%d\t%d\t%d\t%.2f\t%.2f\t%.2f\t\n",
+					output.Version, output.Threads, output.TPS, output.QPS, output.Read, output.Write, output.Other, output.Total, output.IgnoredErrors, output.Recoonects, output.MinLatency, output.AvgLatency, output.MaxLatency)
+			} else {
+				fmt.Printf("%d\t%.2f\t%.2f\t%s\n",
+					output.Threads, output.QPS, output.AvgLatency, output.PercentileLatency)
+			}
 		}
 	}
 	return nil
