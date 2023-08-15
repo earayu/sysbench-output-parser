@@ -26,3 +26,8 @@ cover: ## coverage
 fmt: ## go fmt
 	gofmt -l -s -d -w .
 
+build: ## go build
+	go build -o sysparser ./cmd/sysparser
+
+clean: ## clean
+	rm sysparser

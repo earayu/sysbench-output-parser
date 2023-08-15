@@ -31,7 +31,7 @@ type output struct {
 
 func main() {
 	app := &cli.App{
-		Name:   "kubeblocks",
+		Name:   "sysparser",
 		Action: parseAndPrint,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
