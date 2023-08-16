@@ -13,6 +13,9 @@ make build
 # detail info
 ./sysparser --file=./sample/kb_sysbench.log --detail=true
 
+# batch process
+./transform.sh $path
+
 make clean
 ```
 
